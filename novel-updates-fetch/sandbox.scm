@@ -113,3 +113,38 @@
 	  (newline)
 	  (thread-sleep! seconds)
 	  (process-next-link mbox index-mbox external-mbox)))))
+
+(define (write-out-external-links mbox filename)
+  (let ((link (mailbox-receive! mbox)))
+    (if (external-chapter-link? link)
+	(begin
+	  (with-output-to-file  filename
+	    (lambda ()
+	      (write (external-chapter-link-link link))
+	      (newline))
+	    #:append)
+	  (write-out-external-links mbox filename)))))
+
+
+(define *link*
+  (index-link
+   "seed-link"
+   "https://www.novelupdates.com/series/a-wild-last-boss-appeared/" ) )
+
+(define *index-mbox* (make-mailbox))
+(define *external-mbox* (make-mailbox))
+
+(define *index-thread*
+  (thread-start!
+   (lambda ()
+     (process-next-link *index-mbox*
+			*index-mbox*
+			*external-mbox*))))
+
+(define *writer-thread*
+  (thread-start!
+   (lambda ()
+     (write-out-external-links *external-mbox*
+			       "external-links.txt"))))
+
+;; (produce-index-link *link* *index-mbox* *external-mbox*)
