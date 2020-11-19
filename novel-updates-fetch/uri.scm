@@ -1,6 +1,7 @@
 (import srfi-14
 	srfi-13
 	srfi-1
+	srfi-88
 	(chicken irregex))
 
 ;;
@@ -231,3 +232,71 @@
      (uri-path uri)
      (%query-parmeters-set-all param-alist (uri-query uri))
      (uri-fragment uri))))
+
+
+;; resolves a relative path (as list of elements) against
+;; a base path (as list of elements) returning the
+;; resulting path elements as list
+;;
+;; If given a null relative path, simply rturns the base path
+(define (%resolve-relative-path-elements relative base)
+  (if (null? relative)
+      base
+      (let ((head (car relative)))
+	(if (string= "." head)
+	    (%resolve-relative-path-elements
+	     (cdr relative)
+	     base)
+	    (if (string= ".." head)
+		(if (null? base)
+		    (error "Relative path goes further down base!"
+			   (list (cons 'relative relative)
+				 (cons 'base base)))
+		    (%resolve-relative-path-elements
+		     (cdr relative)
+		     (drop-right base 1)))
+		(append base relative))))))
+
+;; "resolves" the given path to an absolute path
+;; We are also given the possible base path (which *must* be absolute)
+(define (%make-path-absolute target-path base-path)
+  (if (not (uri-path-relative? target-path))
+      target-path
+      (if (uri-path-relative? base-path)
+	  (error
+	   (format
+	    "Cannot make path '~a' abosulte with relative parent '~a"
+	    target-path
+	    base-path)
+	   base-path)
+	  (make-uri-path
+	   (%resolve-relative-path-elements
+	    (uri-path-elements target-path)
+	    (uri-path-elements base-path))
+	   #f))))
+
+
+;; return a uri that has an abosule path, using the base uri if need be
+;; toresolve relative paths
+(define (uri-ensure-absolute-path uri base-uri)
+  (uri-t
+   (uri-scheme uri)
+   (uri-authority uri)
+   (%make-path-absolute (uri-path uri) (uri-path base-uri))
+   (uri-query uri)
+   (uri-fragment uri)))
+
+
+;; ;; Returns a uri that has the given selected entries ensured
+;; (define* (uri-ensure uri
+;; 		     (scheme: scheme (uri-scheme uri) )
+;; 		     (authority: authority (uri-authority uri))
+;; 		     (path: path (uri-path uri))
+;; 		     (query: query (uri-query uri))
+;; 		     (fragment: fragment (uri-fragment uri)))
+;;   (uri-t
+;;    scheme
+;;    authority
+;;    path
+;;    query
+;;    fragment))
