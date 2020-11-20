@@ -101,10 +101,15 @@
   (define (%parse-query-string-to-alist query-string)
     (let ((amperstand_tokens
 	   (string-tokenize query-string char-set:not-amperstand)))
-      (map
-       (lambda (expr)
-	 (string-tokenize expr char-set:not-equal))
-       amperstand_tokens)))
+      (filter
+       (lambda (p) p)
+       (map
+	(lambda (expr)
+	  (let ((toks (string-tokenize expr char-set:not-equal)))
+	    (if (and toks (= (length toks) 2))
+		(cons (first toks) (second toks))
+		#f)))
+	amperstand_tokens))))
 
   ;; creates a uri-query-parameters-t from a query string (without leading ?)
   (define (%parse-query-string-to-parameters query-string)
@@ -123,7 +128,11 @@
 
   ;; tokenize the path string into a list of elements
   (define (%parse-path-string-to-path-list path-string)
-    (string-tokenize (string-trim path-string) char-set:not-slash))
+    (let ((elements
+	   (string-tokenize (string-trim path-string) char-set:not-slash)))
+      (if (string-suffix? "/" path-string)
+	  (append elements (list ""))
+	  elements)))
 
   ;; is this uri path relative or not
   (define (%path-string-is-relative? path-string)
@@ -188,6 +197,9 @@
   ;; create a uri string from a transformable-uri-t
   ;; straight out of rfc3986 section 5.3
   ;; https://tools.ietf.org/html/rfc3986#section-5.3
+
+  (define (null-false-empty? x)
+    (or (null? x) (not x) (< (string-length (string-trim x)) 1)))
   
   (define (uri-query-parameters-to-query-string query)
     (string-join
@@ -196,22 +208,26 @@
       (uri-query-parameters-alist query))))
   
   (define (uri-to-string uri)
-    (string-append
-      (if (not (null? (uri-scheme uri)))
-	  (string-append (uri-scheme uri) ":")
-	  "")
-      (if (not (null? (uri-authority uri)))
-	  (string-append "//" (uri-authority uri))
-	  "")
-      "/"
-      (string-join (uri-path-elements (uri-path uri)) "/")
-      (if (not (null? (uri-query uri)))
-	  (string-append "?" (uri-query-parameters-to-query-string
-			      (uri-query uri)))
-	  "")
-      (if (not (null? (uri-fragment uri)))
-	  (string-append "#" (uri-fragment uri))
-	  "")))
+    (let ((path-string
+	   (string-join (uri-path-elements (uri-path uri)) "/")))
+      (string-append
+       (if (not (null-false-empty? (uri-scheme uri)))
+	   (string-append (uri-scheme uri) ":")
+	   "")
+       (if (not (null-false-empty? (uri-authority uri)))
+	   (string-append "//" (uri-authority uri))
+	   "")
+       (if (not (null-false-empty? path-string))
+	   (string-append "/" path-string)
+	   "")
+       (if (not (null-false-empty? (uri-query-parameters-to-query-string
+				    (uri-query uri))))
+	   (string-append "?" (uri-query-parameters-to-query-string
+			       (uri-query uri)))
+	   "")
+       (if (not (null-false-empty? (uri-fragment uri)))
+	   (string-append "#" (uri-fragment uri))
+	   ""))))
       
 
 
