@@ -1,15 +1,13 @@
 ;;;;
 ;;;; Library definition for uri
-
-(module novel-updates-uri (*)
+(module novel-updates-uri *
   (import srfi-14
 	  srfi-13
 	  srfi-1
 	  srfi-28
 	  (chicken irregex)
 	  (chicken base)
-	  scheme )
-
+	  scheme)
   ;;
   ;; THE rfc3986 regex
   ;;
@@ -290,4 +288,31 @@
      (%make-path-absolute (uri-path uri) (uri-path base-uri))
      (uri-query uri)
      (uri-fragment uri)))
-)
+
+  )
+
+
+;; (export uri-path-t
+;; 	  make-uri-path
+;; 	  uri-path?
+;; 	  uri-path-elements
+;; 	  uri-path-relative?
+
+;; 	  uri-query-parameters-t
+;; 	  uri-query-parameters
+;; 	  uri-query-parameters?
+;; 	  uri-query-parameters-alist
+
+;; 	  transformable-uri-t
+;; 	  uri-t
+;; 	  uri-t?
+;; 	  uri-scheme
+;; 	  uri-authority
+;; 	  uri-path
+;; 	  uri-query
+;; 	  uri-fragment
+
+;; 	  parse-uri-string
+;; 	  uri-ensure-query-parameters
+;; 	  uri-ensure-absolute-path)
+

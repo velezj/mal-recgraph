@@ -126,25 +126,25 @@
 	  (write-out-external-links mbox filename)))))
 
 
-(define *link*
-  (index-link
-   "seed-link"
-   "https://www.novelupdates.com/series/a-wild-last-boss-appeared/" ) )
+;; (define *link*
+;;   (index-link
+;;    "seed-link"
+;;    "https://www.novelupdates.com/series/a-wild-last-boss-appeared/" ) )
 
-(define *index-mbox* (make-mailbox))
-(define *external-mbox* (make-mailbox))
+;; (define *index-mbox* (make-mailbox))
+;; (define *external-mbox* (make-mailbox))
 
-(define *index-thread*
-  (thread-start!
-   (lambda ()
-     (process-next-link *index-mbox*
-			*index-mbox*
-			*external-mbox*))))
+;; (define *index-thread*
+;;   (thread-start!
+;;    (lambda ()
+;;      (process-next-link *index-mbox*
+;; 			*index-mbox*
+;; 			*external-mbox*))))
 
-(define *writer-thread*
-  (thread-start!
-   (lambda ()
-     (write-out-external-links *external-mbox*
-			       "external-links.txt"))))
+;; (define *writer-thread*
+;;   (thread-start!
+;;    (lambda ()
+;;      (write-out-external-links *external-mbox*
+;; 			       "external-links.txt"))))
 
 ;; (produce-index-link *link* *index-mbox* *external-mbox*)
