@@ -42,6 +42,9 @@
   ;;    path      = $5
   ;;    query     = $7
   ;;    fragment  = $9
+  ;;
+  ;; straight from rfc3986 Appendix B
+  ;; https://tools.ietf.org/html/rfc3986#appendix-B
 
 
 
@@ -183,8 +186,33 @@
 		 (assoc-value 'fragment components)))))
 
   ;; create a uri string from a transformable-uri-t
-  (define (uri-as-string uri)
-    #f)
+  ;; straight out of rfc3986 section 5.3
+  ;; https://tools.ietf.org/html/rfc3986#section-5.3
+  
+  (define (uri-query-parameters-to-query-string query)
+    (string-join
+     (map
+      (lambda (p) (string-append (car p) "=" (cdr p)))
+      (uri-query-parameters-alist query))))
+  
+  (define (uri-to-string uri)
+    (string-append
+      (if (not (null? (uri-scheme uri)))
+	  (string-append (uri-scheme uri) ":")
+	  "")
+      (if (not (null? (uri-authority uri)))
+	  (string-append "//" (uri-authority uri))
+	  "")
+      "/"
+      (string-join (uri-path-elements (uri-path uri)) "/")
+      (if (not (null? (uri-query uri)))
+	  (string-append "?" (uri-query-parameters-to-query-string
+			      (uri-query uri)))
+	  "")
+      (if (not (null? (uri-fragment uri)))
+	  (string-append "#" (uri-fragment uri))
+	  "")))
+      
 
 
   ;; easy representation of a transformable-uri-t
