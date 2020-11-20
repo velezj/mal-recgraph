@@ -1,13 +1,13 @@
 ;;;;
 ;;;; Library definition for uri
 (module novel-updates-uri *
-  (import srfi-14
-	  srfi-13
+  (import (chicken base)
+	  scheme
 	  srfi-1
+	  srfi-13
+	  srfi-14
 	  srfi-28
-	  (chicken irregex)
-	  (chicken base)
-	  scheme)
+	  (chicken irregex))
   ;;
   ;; THE rfc3986 regex
   ;;
@@ -159,17 +159,17 @@
 	   (cons 'query (irregex-match-substring matches 7))
 	   (cons 'fragment (irregex-match-substring matches 9))))))
 
-  ;; utility to get alist value only or #f
-  (define (assoc-value k alist)
-    (if (null? alist)
-	#f
+  ;; utility to get alist value only or ""
+  (define (%assoc-string-value k alist)
+    (if (or (null? alist) (not alist))
+	""
 	(let ((kv (assoc k alist)))
-	  (if (null? kv)
-	      #f
-	      (if (not (pair? kv))
-		  #f
-		  (if (null? (cdr kv))
-		      #f
+	  (if (or (null? kv) (not kv))
+	      ""
+	      (if (or (not (pair? kv)) (not kv))
+		  ""
+		  (if (or (null? (cdr kv)) (not (cdr kv)))
+		      ""
 		      (cdr kv)))))))
 
 
@@ -178,12 +178,12 @@
     (let ((components (%parse-uri-string-to-components uri-string)))
       (if (null? components)
 	  #f
-	  (uri-t (assoc-value 'scheme components)
-		 (assoc-value 'authority components)
-		 (%path-string-to-path (assoc-value 'path components))
+	  (uri-t (%assoc-string-value 'scheme components)
+		 (%assoc-string-value 'authority components)
+		 (%path-string-to-path (%assoc-string-value 'path components))
 		 (%parse-query-string-to-parameters
-		  (assoc-value 'query components))
-		 (assoc-value 'fragment components)))))
+		  (%assoc-string-value 'query components))
+		 (%assoc-string-value 'fragment components)))))
 
   ;; create a uri string from a transformable-uri-t
   ;; straight out of rfc3986 section 5.3
