@@ -1,6 +1,6 @@
 ;;;;
 ;;;; Library definition for uri
-(module novel-updates-uri *
+(module (novel-updates uri) *
   (import (chicken base)
 	  scheme
 	  srfi-1
