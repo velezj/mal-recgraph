@@ -82,6 +82,10 @@
     (query uri-query)
     (fragment uri-fragment))
 
+;;;;
+;;;;
+    (define (null-false-empty? x)
+      (or (null? x) (not x) (< (string-length (string-trim x)) 1)))
 
 ;;;;
 ;;;; Parsing query string into parameter alist
@@ -196,11 +200,7 @@
 
   ;; create a uri string from a transformable-uri-t
   ;; straight out of rfc3986 section 5.3
-  ;; https://tools.ietf.org/html/rfc3986#section-5.3
-
-  (define (null-false-empty? x)
-    (or (null? x) (not x) (< (string-length (string-trim x)) 1)))
-  
+  ;; https://tools.ietf.org/html/rfc3986#section-5.3  
   (define (uri-query-parameters-to-query-string query)
     (string-join
      (map
@@ -327,8 +327,12 @@
   ;; toresolve relative paths
   (define (uri-ensure-absolute-path uri base-uri)
     (uri-t
-     (uri-scheme uri)
-     (uri-authority uri)
+     (if (not (null-false-empty? (uri-scheme uri)))
+	 (uri-scheme uri)
+	 (uri-scheme base-uri))
+     (if (not (null-false-empty? (uri-authority uri)))
+	 (uri-authority uri)
+	 (uri-authority base-uri))
      (%make-path-absolute (uri-path uri) (uri-path base-uri))
      (uri-query uri)
      (uri-fragment uri)))

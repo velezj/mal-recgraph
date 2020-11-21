@@ -73,8 +73,8 @@
 				      (assoc 'name attrs)
 				      (uri-ensure-absolute-path
 				       (parse-uri-string
-					(second (assoc 'href attrs))
-					(index-link-link idx-link)))))
+					(second (assoc 'href attrs)))
+				       (index-link-link idx-link))))
 			       seed)
 			      seed ))
 		      seed))))))
