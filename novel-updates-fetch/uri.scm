@@ -218,7 +218,11 @@
 	   (string-append "//" (uri-authority uri))
 	   "")
        (if (not (null-false-empty? path-string))
-	   (string-append "/" path-string)
+	   (string-append
+	    (if (not (uri-path-relative? (uri-path uri)))
+		"/"
+		"")
+	    path-string)
 	   "")
        (if (not (null-false-empty? (uri-query-parameters-to-query-string
 				    (uri-query uri))))
@@ -290,7 +294,8 @@
     (if (null? relative)
 	base
 	(let ((head (car relative)))
-	  (if (string= "." head)
+	  (if (or (string= "." head)
+		  (string= "" head))
 	      (%resolve-relative-path-elements
 	       (cdr relative)
 	       base)
