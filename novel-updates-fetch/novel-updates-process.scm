@@ -1,21 +1,21 @@
 (module (novel-updates process) *
   (import (chicken base)
-	  scheme
-	  (novel-updates uri)
-	  http-client
-	  html-parser
-	  json
-	  srfi-1
-	  srfi-13
-	  srfi-9
-	  srfi-18
-	  srfi-27
-	  srfi-28
-	  mailbox
-	  simple-timer
-	  (chicken random)
-	  (chicken io)
-	  (chicken process))
+          scheme
+          (novel-updates uri)
+          http-client
+          html-parser
+          json
+          srfi-1
+          srfi-13
+          srfi-9
+          srfi-18
+          srfi-27
+          srfi-28
+          mailbox
+          simple-timer
+          (chicken random)
+          (chicken io)
+          (chicken process))
 
 
     ;;;;
@@ -50,48 +50,69 @@
     ;;
     ;; This procedure is extremely integrated with the structure of
     ;; novel-updates.com website :)
+    ;;
+    ;; returns #t if a next link/page is found otherwise #f
     (define (produce-index-link idx-link index-mbox external-mbox)
-      (let ((parser
-	     (make-html-parser
-	      'start:
-	      (lambda (tag attrs seed virtual?)
-		(let ((target (assoc 'class attrs)))
-		  (if (and (pair? target)
-			   (= (length target) 2))
-		      (if (string-contains (second target)
-					   "chp-release")
-			  (append
-			   (list (external-chapter-link
-				  (assoc 'name attrs)
-				  (parse-uri-string
-				   (second (assoc 'href attrs)))))
-			   seed)
-			  (if (string-contains (second target)
-					       "next_page")
-			      (append
-			       (list (index-link
-				      (assoc 'name attrs)
-				      (uri-ensure-absolute-path
-				       (parse-uri-string
-					(second (assoc 'href attrs)))
-				       (index-link-link idx-link))))
-			       seed)
-			      seed ))
-		      seed))))))
-	(with-input-from-request
-	 (uri-to-string (index-link-link idx-link))
-	 #f
-	 (lambda ()
-	   (let ((links (parser '())))
-	     (for-each
-	      (lambda (link)
-		(if (index-link? link)
-	 	    (mailbox-send! index-mbox link)
-	 	    (if (external-chapter-link? link)
-	 		(mailbox-send! external-mbox link)
-	 		(display "!!"))))
-	      links))))))
-
+      (let* ((parser
+              (make-html-parser
+               'start:
+               (lambda (tag attrs seed virtual?)
+                 (let ((target (assoc 'class attrs)))
+                   (if (and (pair? target)
+                            (= (length target) 2))
+                       (if (string-contains (second target)
+                                            "chp-release")
+                           (append
+                            (list (external-chapter-link
+                                   (assoc 'name attrs)
+                                   (uri-ensure-absolute-path
+                                    (parse-uri-string
+                                     (second (assoc 'href attrs)))
+                                    (index-link-link idx-link))))
+                            seed)
+                           (if (string-contains (second target)
+                                                "next_page")
+                               (begin
+                                 (display (format
+                                           "next-page parsed out: ~a" attrs))
+                                 (newline)
+                                 (append
+                                  (list (index-link
+                                         (assoc 'name attrs)
+                                         (uri-ensure-absolute-path
+                                          (parse-uri-string
+                                           (second (assoc 'href attrs)))
+                                          (index-link-link idx-link))))))
+                               seed))
+                       seed )))
+                 )))
+        (with-input-from-request
+         (uri-to-string (index-link-link idx-link))
+         #f
+         (lambda ()
+           (display
+            (format "request finished: ~a"
+                    (uri-to-string (index-link-link idx-link))))
+           (newline)
+           (let ((links (parser '()))
+                 (found-next #f))
+             (display (format "parsed links: #~a"
+                              (length links)))
+             (newline)
+             (for-each
+              (lambda (link)
+                (if (index-link? link)
+                    (begin
+                      (mailbox-send! index-mbox link)
+                      (set! found-next #t)
+                      (display "found next")
+                      (newline))
+                    (if (external-chapter-link? link)
+                        (mailbox-send! external-mbox link)
+                        (display " !! "))))
+              links)
+             found-next)))))
+    
     )
 
 
