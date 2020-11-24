@@ -58,34 +58,43 @@
                'start:
                (lambda (tag attrs seed virtual?)
                  (let ((target (assoc 'class attrs)))
-                   (if (and (pair? target)
-                            (= (length target) 2))
+                   (if (and target
+                            (pair? target)
+			    (list? target)
+			    (= (length target) 2)
+                            (string? (second target)))
                        (if (string-contains (second target)
                                             "chp-release")
-                           (append
-                            (list (external-chapter-link
-                                   (assoc 'name attrs)
-                                   (uri-ensure-absolute-path
-                                    (parse-uri-string
-                                     (second (assoc 'href attrs)))
-                                    (index-link-link idx-link))))
-                            seed)
+                           (begin
+			     ;; (display (format "found chapter: target=~a ~a"
+			     ;; 		      target
+			     ;; 		      attrs))
+			     ;; (newline)
+			     (append
+                              (list (external-chapter-link
+                                     (assoc 'name attrs)
+                                     (uri-ensure-absolute-path
+                                      (parse-uri-string
+                                       (second (assoc 'href attrs)))
+                                      (index-link-link idx-link))))
+                              seed))
                            (if (string-contains (second target)
                                                 "next_page")
                                (begin
-                                 (display (format
-                                           "next-page parsed out: ~a" attrs))
-                                 (newline)
+                                 ;; (display (format
+                                 ;;           "next-page parsed out: ~a" attrs))
+                                 ;; (newline)
                                  (append
                                   (list (index-link
                                          (assoc 'name attrs)
                                          (uri-ensure-absolute-path
                                           (parse-uri-string
                                            (second (assoc 'href attrs)))
-                                          (index-link-link idx-link))))))
-                               seed))
-                       seed )))
-                 )))
+                                          (index-link-link idx-link))))
+                                  seed))
+                               seed ))
+		       seed))))))
+	     
         (with-input-from-request
          (uri-to-string (index-link-link idx-link))
          #f
@@ -96,7 +105,7 @@
            (newline)
            (let ((links (parser '()))
                  (found-next #f))
-             (display (format "parsed links: #~a"
+              (display (format "parsed links: #~a"
                               (length links)))
              (newline)
              (for-each

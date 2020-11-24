@@ -110,28 +110,30 @@
   (define (start-simple-system output-filename seconds seed-index-url)
     (let* ((done-flag-box (box #f))
 	   (done? (lambda () (unbox done-flag-box)))
-	   (index-thread (make-process-index-link-thread *index-mbox*
-							*index-mbox*
-							*external-mbox*
-							seconds
-							2
-							done?
-							done-flag-box))
-	  (writer-thread (make-external-link-mbox-file-writer-thread
-			  output-filename
-			  *external-mbox*
-			  2
-			  done?)))
+	   (index-mbox (make-mailbox))
+	   (external-mbox (make-mailbox))
+	   (index-thread (make-process-index-link-thread index-mbox
+							 index-mbox
+							 external-mbox
+							 seconds
+							 2
+							 done?
+							 done-flag-box))
+	   (writer-thread (make-external-link-mbox-file-writer-thread
+			   output-filename
+			   external-mbox
+			   2
+			   done?)))
       (thread-start! writer-thread)
       (thread-start! index-thread)
       (produce-index-link (index-link "seed" (parse-uri-string seed-index-url))
-			  *index-mbox*
-			  *external-mbox*)
+			  index-mbox
+			  external-mbox)
       (list
        index-thread
        writer-thread
-       *index-mbox*
-       *external-mbox*)))
+       index-mbox
+       external-mbox)))
 
 
   
