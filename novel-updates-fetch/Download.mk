@@ -7,10 +7,7 @@ all: $(addsuffix .touch,$(subst links_,finished_,$(wildcard links_*)))
 
 
 finished_%.touch: links_%
-	{ \
-	set -e ;\
-	set -x ;\
-	name=$(subst links_,,$<) ;\
+	-name=$(subst links_,,$<) ;\
 	dirname=chapters_$${name} ;\
 	urlsname=urls_$${name}.txt ;\
 	logfile=log.txt ;\
@@ -20,8 +17,7 @@ finished_%.touch: links_%
 	mkdir -p "$${dirname}" ;\
 	cd "$${dirname}" ;\
 	cat ../$< | tr --delete '"' > "$${urlsname}" ;\
-	wget --wait=${WGET_WAIT} --random-wait --input-file="$${urlsname}" --verbose ;\
-	}
+	wget --wait=${WGET_WAIT} --random-wait --input-file="$${urlsname}" --verbose
 	touch "${@}"
 
 
