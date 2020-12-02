@@ -1,3 +1,32 @@
+;;;;
+;;;; Library definition for uri
+(module (novel-updates srfi 89) *
+  (import (chicken base)
+	  scheme
+	  (chicken keyword)
+	  (srfi 88))
+
+
+;; kind of a stupid implementation but with
+
+(define-syntax define-macro
+  (er-macro-transformer          
+    (lambda (exp rename compare)
+      (if (symbol? (cadr exp))
+            (let ((name (cadr exp))
+                  (expndr (caddr exp))
+                  (-exp (gensym)) (-rename (gensym)) (-compare (gensym)))
+              `(define-syntax ,name
+                (er-macro-transformer (lambda (,-exp ,-rename ,-compare)
+                  (apply ,expndr (cdr ,-exp))))))
+            (let ((name (caadr exp))
+                  (formals (cdadr exp))
+                  (body (cddr exp))
+                  (-exp (gensym)) (-rename (gensym)) (-compare (gensym)))
+              `(define-syntax ,name
+                (er-macro-transformer (lambda (,-exp ,-rename ,-compare)
+                  (apply (lambda ,formals ,@body) (cdr ,-exp))))))))))
+
 ;------------------------------------------------------------------------------
 
 ; Macro expander for define*.
@@ -8,10 +37,12 @@
          (lambda* ,(cdr pattern) ,@body))
       `(define ,pattern ,@body)))
 
+
 ; Macro expander for lambda*.
 
 (define-macro (lambda* formals . body)
 
+  (import (srfi 88))
 ;------------------------------------------------------------------------------
 
 ; Procedures needed at expansion time.
@@ -235,6 +266,7 @@
                (let* ,bindings
                  ,@body))))))
 
+  (import (srfi 88))
   (apply expand (parse-formals formals)))
 
 (define (make-perfect-hash-table alist)
@@ -331,3 +363,5 @@
                           (loop (cddr args)))))))))))
 
 ;------------------------------------------------------------------------------
+
+)
