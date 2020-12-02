@@ -8,7 +8,8 @@
 	  (srfi 13)
 	  (srfi 28)	  
 	  (srfi 128)
-	  (srfi 146))
+	  (srfi 146)
+	  (chicken file))
 
 
   ;;;;
@@ -201,4 +202,40 @@
      (format "~%")))
   
 
+
+
+  ;;;;
+  ;;;; Work with directories and html files within
+
+  (define (get-chapter-directories base-dir)
+    (find-files base-dir
+		test: ".*chapters_[^/]*"))
+
+  (define (get-all-chapter-files base-dir)
+    (filter (lambda (p)
+	      (not (string-suffix? ".txt" p)))
+	    (find-files base-dir
+			test: ".*chapters_.*/.*")))
+
+  (define (extract-text-for-file filename)
+    (let ((paths '()))
+      (with-input-from-file filename
+	(lambda ()
+	  (set! paths (all-paths (current-input-port)))))
+      (let* ((outfile (string-append filename ".txt"))
+	     (text-paths
+	      (compute-salient-paths paths html-tree-path-comparator))
+	     (text (compute-text-from-paths text-paths)))
+	(with-output-to-file outfile
+	  (lambda ()
+	    (write text))))))
+
+  (define (extract-text-for-all-chapters base-dir)
+    (for-each
+     (lambda (fn)
+       (display (format "Extracting for '~a' ~%" fn))
+       (extract-text-for-file fn))
+     (get-all-chapter-files base-dir)))
+  
   )
+
