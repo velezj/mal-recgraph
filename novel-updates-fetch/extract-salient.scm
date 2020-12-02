@@ -5,7 +5,8 @@
 	  scheme
 	  html-parser
 	  (srfi 1)
-	  (srfi 28)
+	  (srfi 13)
+	  (srfi 28)	  
 	  (srfi 128)
 	  (srfi 146))
 
@@ -16,10 +17,11 @@
   ;;
   ;; An node in an html tree
   (define-record-type html-tree-node-t
-    (html-tree-node tag attributes)
+    (html-tree-node tag attributes text)
     html-tree-node?
     (tag html-tree-node-tag)
-    (attributes html-tree-node-attributes))
+    (attributes html-tree-node-attributes)
+    (text html-tree-node-text set-html-tree-node-text!))
   
   ;; display nicely for humans
   (set-record-printer!
@@ -32,7 +34,8 @@
   ;; convert node to simple alist
   (define (html-tree-node->alist n)
     (list (cons 'tag (html-tree-node-tag n))
-	  (cons 'attributes (html-tree-node-attributes n))))
+	  (cons 'attributes (html-tree-node-attributes n))
+	  (cons 'text (html-tree-node-text n))))
 
   ;; comparator interface (for using with mappings)
   (define html-tree-node-comparator
@@ -56,12 +59,17 @@
     (html-tree-path nodes)
     html-tree-path?
     (nodes html-tree-path-nodes))
+
   (set-record-printer!
    html-tree-path-t
    (lambda (x out)
-     (display "Path{" out)
-     (display (html-tree-path-nodes x) out)
-     (display "}" out)))
+     ;; (display "Path{" out)
+     ;; (display (html-tree-path-nodes x) out)
+     ;; (display "}" out)))
+     (for-each (lambda (n)
+		 (display "/" out)
+		 (display (html-tree-node-tag n) out))
+	       (html-tree-path-nodes x))))
 
 
   ;; comparator interface (for using with mappings)
@@ -100,7 +108,21 @@
 		    (current-path (second seed)))
 		(list previous-paths
 		      (append current-path
-			      (list (html-tree-node tag attrs)))))))
+			      (list (html-tree-node tag attrs "")))))))
+	   (%text
+	    (lambda (text seed)
+	      (let ((previous-paths (first seed))
+		    (current-path (second seed)))
+		(if (null? current-path)
+		    seed
+		    (begin
+		      (set-html-tree-node-text!
+		       (last current-path)
+		       (string-append
+			(html-tree-node-text
+			 (last current-path))
+			text))
+		      (list previous-paths current-path))))))
 	   (%end-tag (lambda (tag attrs parent-seed seed virtual?)
 		       (let ((previous-paths (first seed))
 			     (current-path (second seed)))
@@ -111,11 +133,12 @@
 			      '()
 			      (drop-right current-path 1))))))
 	   (parser (make-html-parser
-		   start: %start-tag
-		   end: %end-tag)))
-      (parser (list '() '() ) html-document-port)))
-
-
+		    start: %start-tag
+		    text: %text
+		    end: %end-tag)))
+      (first (parser (list '() '() ) html-document-port))))
+  
+  
   ;;
   ;; Utility method to convert from HTML string to paths
   (define (html-string->paths html)
@@ -126,13 +149,56 @@
   ;;;;
   ;;;; Find salient paths
 
-  
-  (define (count-equal-paths html-tree-paths path-comparator)
+  ;; compute a count of the times each path in html tree is seen
+  (define (%count-equal-paths html-tree-paths path-comparator)
     (fold
      (lambda (path seed)
        (let ((count (+ (mapping-ref/default seed path 0) 1)))
 	 (mapping-set seed path count)))
      (mapping path-comparator)
      html-tree-paths))
+
+  
+  ;; returns is an element is inside a lisst using given comparator
+  (define (member/c? elt lst comparator)
+    (let ((found #f))
+      (for-each
+       (lambda (x)
+	 (if ( (comparator-equality-predicate comparator)
+	       elt
+	       x)
+	     (set! found #t)))
+       lst)
+      found))
+
+
+  ;; grab paragraphs as salient
+  (define (compute-salient-paths html-tree-paths path-comparator)
+    (let ((salient-paths
+	   (mapping-keys
+	    (mapping-filter
+	     (lambda (k v)
+	       (and (> v 2)
+		    (equal?
+		     (html-tree-node-tag (last (html-tree-path-nodes k)))
+		     'p)))
+	     (%count-equal-paths html-tree-paths path-comparator)))))
+      (filter (lambda (p) (member/c? p salient-paths path-comparator))
+	      html-tree-paths)))
+
+
+  ;; Returns a concatenated text from list of paths using only the
+  ;; last node in path
+  (define (compute-text-from-paths paths)
+    (string-join
+     (map (lambda (p)
+	    (if (> (length (html-tree-path-nodes p))
+		   0)
+		(or (html-tree-node-text (last (html-tree-path-nodes p)))
+		    "")
+		""))
+	  paths)
+     (format "~%")))
+  
 
   )
