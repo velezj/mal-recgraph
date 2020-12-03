@@ -175,17 +175,43 @@
 
   ;; grab paragraphs as salient
   (define (compute-salient-paths html-tree-paths path-comparator)
-    (let ((salient-paths
-	   (mapping-keys
+    (let* ((counts (%count-equal-paths html-tree-paths path-comparator))
+	   (max-count (fold (lambda (x seed) (if (> x seed) x seed))
+			    0
+			    (mapping-values counts)))
+	   (count-thresh (round (* (/ 9 10) max-count )))
+	   (possible-paths-entries
 	    (mapping-filter
 	     (lambda (k v)
-	       (and (> v 2)
-		    (equal?
-		     (html-tree-node-tag (last (html-tree-path-nodes k)))
-		     'p)))
-	     (%count-equal-paths html-tree-paths path-comparator)))))
+	       (let* ((path-length (length (html-tree-path-nodes k)))
+		      (half-len (round (/ path-length 2)))
+		      (thresh (if (< half-len 1) (min 1 path-length) half-len))
+		      (possible-tails
+		       (map html-tree-node-tag
+			    (take-right (html-tree-path-nodes k) thresh))))
+		 (and (> v count-thresh)
+		      (member 'p possible-tails))))
+	     counts))
+	   (salient-paths
+	    (mapping-keys possible-paths-entries)))
       (filter (lambda (p) (member/c? p salient-paths path-comparator))
 	      html-tree-paths)))
+		      
+      ;; 	   (salient-paths
+      ;; 	   (mapping-keys
+      ;; 	    (mapping-filter
+      ;; 	     (lambda (k v)
+      ;; 	       (and (> v 2)
+      ;; 		    (member
+      ;; 		     'p
+      ;; 		     (map
+      ;; 		      html-tree-node-tag
+      ;; 		      (take-right
+      ;; 		       (html-tree-path-nodes k)
+      ;; 		       (min 3 (length (html-tree-path-nodes k))))))))
+      ;; 	     (%count-equal-paths html-tree-paths path-comparator)))))
+      ;; (filter (lambda (p) (member/c? p salient-paths path-comparator))
+      ;; 	      html-tree-paths)))
 
 
   ;; Returns a concatenated text from list of paths using only the
@@ -228,7 +254,7 @@
 	     (text (compute-text-from-paths text-paths)))
 	(with-output-to-file outfile
 	  (lambda ()
-	    (write text))))))
+	    (display text))))))
 
   (define (extract-text-for-all-chapters base-dir)
     (for-each
