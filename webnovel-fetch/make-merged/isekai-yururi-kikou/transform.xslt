@@ -30,7 +30,7 @@
 
   <xsl:template match="//xhtml:script"/>
 
-  <xsl:template match="text()"/>
+  <!-- <xsl:template match="text()"/> -->
 
   <xsl:template match="*">
     <xsl:apply-templates/>
