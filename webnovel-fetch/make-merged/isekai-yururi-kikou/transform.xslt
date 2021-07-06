@@ -21,12 +21,12 @@
     </content>
   </xsl:template>
 
-  <xsl:template match="//*[contains(@class,'entry-content')]//*[not(name()='scritp')]">
-    <xsl:copy>
-      <xsl:value-of select="text()" />
-      <xsl:apply-templates/>
-    </xsl:copy>
-  </xsl:template>
+  <!-- <xsl:template match="//*[contains(@class,'entry-content')]//*[not(name()='scritp')]"> -->
+  <!--   <xsl:copy> -->
+  <!--     <xsl:value-of select="text()" /> -->
+  <!--     <xsl:apply-templates/> -->
+  <!--   </xsl:copy> -->
+  <!-- </xsl:template> -->
 
   <xsl:template match="//xhtml:script"/>
 
